@@ -1,0 +1,126 @@
+
+
+第五章
+
+netstat 用星号“*”表示一个为0的IP地址（INADDR_ANY，通配地址）或为0的端口号
+
+网络编程时可能会遇到的三种情况:
+1、当fork子进程时，必须捕获SIGCHLD信号
+2、当捕获信号时，必须处理被中断的系统调用
+3、SIGCHLD的信号处理函数必须正确编写，应使用waitpid函数以免留下僵死进程
+
+
+穿越套接字传递二进制结构体往往会存在两端系统答谢段不一致问题
+解决该问题的常用方法：
+1、把所有的数值数据作为文本串来传递。
+2、显示定义所支持数据类型的二进制格式（位数、大端或小端字节序）
+
+
+
+
+
+第十一章
+1、客户、解析器和名字服务器的典型关系
+
+
+/etc/resolv.conf通常包含本地名字服务器主机的IP地址
+如果答案太长，超出了UDP消息的承载能力，本地名字服务器和解析器自动切换到TCP
+
+2、查找主机名所对应的IP地址最基本的函数是gethostbyname
+
+#include <netdb.h>
+struct hostent *gethostbyname(const char *hostname);
+
+struct hostent {
+	char *h_name;		//official name of host
+	char **h_aliases;	// pointer to array of pointers to alias names
+	int h_addrtype;	// host address type:AF_INET
+	int h_length;		// length of address: 4
+	char **h_addr_list;	// ptr to array of ptrs with IPV4 addrs
+}
+
+这个函数的局限是只能返回IPV4地址，而getaddrinfo函数能同时处理IPV4和IPV6地址。对代码中已有的gethostbyname不必做修改（除非整个因特网改为IPV6了），鼓励在新的程序中改用getaddrinfo函数。
+
+当返回出错时，可通过调用hstrerror函数获取错误信息
+extern int h_errno;
+const char *hstrerror(int err);
+
+3、gethostbyaddr函数与gethostbyname相反，由一个二进制的IP地址找对对应的主机名
+#include <netdb.h>
+struct hostent *gethostbyaddr(const char *addr, socklen_t len, int family);
+
+参数addr是一个指向存放IPV4地址的某个in_addr结构的指针。
+
+
+4、getservbyname用于根据给定的名字查找相应的服务。便于服务端口发生更改时，只需要修改下对应的服务端口配置文件（通常是/etc/services），而不需要重新修改编译应用程序。
+
+#include <netdb.h>
+struct servent *getservbyname(const char *servname, const char *protoname);
+
+struct servent {
+	char *s_name;		// official service name
+	char **s_aliases;	// alias list
+	int  s_port;		// port number, network byte order
+	char *s_proto;	// protocol to use
+}
+
+如某服务仅仅支持单个协议，则protoname可以置NULL。典型调用如下：
+struct servent *sptr;
+sptr = getservbyname("ftp", "tcp");
+sptr = getservbyname("ftp", NULL);
+
+
+5、getservbyprot则是根据给定端口号和可选协议查找相应的服务
+#inlcude <netdb.h>
+struct servent *getservbyport(int port, const char *protoname);
+port参数必须为网络字节序。典型调用如下：
+struct servent *sptr;
+sptr = getservbyport(hotns(21), "tcp");
+
+
+6、getaddrinfo
+
+
+
+gai_strerror根据getaddrinfo返回的非0错误值返回一个指向对应的出错信息的指针
+#include <netdb.h>
+const char *gai_strerror(int error);
+
+由getaddrinfo返回的所有存储控件都是动态获取的，这些存储空间通过调用freeaddrinfo释放
+#include <netdb.h>
+void freeaddrinfo(struct addrinfo *ai);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+第十五章  UNIX域协议
+
+使用UNIX域套接字有以下三个理由
+1、在源自Berkeley的实现中，unix域套接字往往比通信两端位于同一个主机的TCP套接字快出一倍
+2、UNIX域套接字可用于同一个主机上的不同进程间传递描述符
+3、UNIX域套接字较新的实现把客户的凭证提供给服务器
+
+
+UNIX域套接字地址结构
+#include <sys/un.h>
+struct sockaddr_un {
+	sa_family_t	sun_family;	//posix把UNIX域协议重新命名为“本地IPC”，历史性常值AF_UNIX变为AF_LOCAL
+	char		sun_path[104];	// null-terminated pathname
+};
+
+
+
+
