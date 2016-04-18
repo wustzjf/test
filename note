@@ -91,7 +91,25 @@ const char *gai_strerror(int error);
 void freeaddrinfo(struct addrinfo *ai);
 
 
+getaddrinfo函数及其行为和结果汇总
 
+
+
+
+7、getnameinfo是getaddrinfo的互补函数，它以一个套接字地址为参数，返回描述其中的主机的一个字符串和描述其中的服务的另一个字符串
+
+#include <netdb.h>
+int getnameinfo(const struct sockaddr *sockaddr, socklen_t addrlen,
+			char *host, socklen_t hostlen,
+			char *serv, socklen_t servlen, int flags);
+
+
+
+8、上面讲解的函数，其中gethostbyname、gethostbyaddr、getservbyname、getservbyport这四个函数是不可重入的，可以更换使用带后缀_r的函数，或者使用getaddrinfo和getnameinfo函数。
+
+
+
+四类网络相关信息截图
 
 
 
